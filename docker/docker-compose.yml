@@ -1,0 +1,61 @@
+version: "3.8"
+services:
+
+  database:
+    image: mysql
+    container_name: mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./config.sql:/docker-entrypoint-initdb.d/1.sql
+    networks:
+      - dev
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: phpmyadmin
+    restart: always
+    depends_on:
+      - database
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: database
+    networks:
+      - dev
+#      - dev
+
+  api:
+    build: ./backend
+    container_name: symfony
+    ports:
+      - "8080:80"
+    environment:
+      XDEBUG_CONFIG: remote_host=host.docker.internal
+      COMPOSER_ALLOW_SUPERUSER: 1
+    volumes:
+      - ../api:/var/www
+      - ./backend/vhost:/etc/apache2/sites-enabled
+    restart: always
+    networks:
+      - dev
+
+  template:
+    build:
+      context: ../template
+      dockerfile: ../docker/frontend/react/Dockerfile
+    container_name: react
+    volumes:
+      - ../template:/app
+    ports:
+      - "3000:3000"
+    networks:
+      - dev
+
+networks:
+  dev:
+
+volumes:
+  db-data:
